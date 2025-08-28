@@ -25,12 +25,32 @@ from imblearn.combine import SMOTEENN, SMOTETomek
 from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.pipeline import Pipeline
 import warnings
+import contextlib
+import os
+import shap
+
+# Suppress all warnings at the system level
+os.environ['PYTHONWARNINGS'] = 'ignore'
 warnings.filterwarnings('ignore')
+warnings.simplefilter("ignore")
 
 # Set random seeds for reproducibility
 np.random.seed(42)
 import random
 random.seed(42)
+
+# --- Ensure graph folder exists ---
+def ensure_graph_folder():
+    """Create graph folder if it doesn't exist"""
+    graph_folder = 'graph'
+    if not os.path.exists(graph_folder):
+        os.makedirs(graph_folder)
+        print(f"✅ Created {graph_folder}/ folder")
+    else:
+        print(f"✅ {graph_folder}/ folder already exists")
+
+# Create graph folder
+ensure_graph_folder()
 
 # --- Robust loader for CSV / Excel ---
 def load_table(path):
@@ -147,6 +167,19 @@ def advanced_feature_selection(X, y, n_features=100):
 
 # Apply advanced feature selection
 selected_features = advanced_feature_selection(X, y, n_features=200)
+
+# Print all selected features without truncation
+print(f"Selected features ({len(selected_features)} total):")
+pd.set_option('display.max_rows', None)  # Show all rows
+pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.width', None)  # Don't wrap long strings
+pd.set_option('display.max_colwidth', None)  # Show full content of each cell
+
+# Convert to list and print each feature
+selected_features_list = selected_features.tolist()
+for i, feature in enumerate(selected_features_list):
+    print(f"{i+1:3d}. {feature}")
+
 X_selected = X[selected_features]
 
 print(f"Final feature set: {X_selected.shape[1]} features")
@@ -260,31 +293,31 @@ models = {
         }
     },
     "LightGBM": {
-        "model": lgb.LGBMClassifier(random_state=42, class_weight='balanced'),
-        "params": {
-            'n_estimators': [100, 200, 300, 500],
-            'learning_rate': [0.01, 0.05, 0.1, 0.2],
-            'num_leaves': [15, 31, 50, 100],
-            'max_depth': [5, 10, 15, -1],
-            'subsample': [0.7, 0.8, 0.9, 1.0],
-            'colsample_bytree': [0.7, 0.8, 0.9, 1.0],
-            'reg_alpha': [0, 0.1, 1, 10],
-            'reg_lambda': [0, 0.1, 1, 10]
-        }
-    },
+    "model": lgb.LGBMClassifier(random_state=42, class_weight='balanced', verbose=-1),
+    "params": {
+        'n_estimators': [100, 200, 300, 500],
+        'learning_rate': [0.01, 0.05, 0.1, 0.2],
+        'num_leaves': [15, 31, 50, 100],
+        'max_depth': [5, 10, 15, -1],
+        'subsample': [0.7, 0.8, 0.9, 1.0],
+        'colsample_bytree': [0.7, 0.8, 0.9, 1.0],
+        'reg_alpha': [0, 0.1, 1, 10],
+        'reg_lambda': [0, 0.1, 1, 10]
+    }
+},
     "XGBoost": {
-        "model": xgb.XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42),
-        "params": {
-            'n_estimators': [100, 200, 300, 500],
-            'learning_rate': [0.01, 0.05, 0.1, 0.2],
-            'max_depth': [3, 5, 7, 9],
-            'subsample': [0.7, 0.8, 0.9, 1.0],
-            'colsample_bytree': [0.7, 0.8, 0.9, 1.0],
-            'reg_alpha': [0, 0.1, 1, 10],
-            'reg_lambda': [0, 0.1, 1, 10],
-            'scale_pos_weight': [1, 3, 5, 10]  # Handle class imbalance
-        }
-    },
+    "model": xgb.XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42, verbosity=0),
+    "params": {
+        'n_estimators': [100, 200, 300, 500],
+        'learning_rate': [0.01, 0.05, 0.1, 0.2],
+        'max_depth': [3, 5, 7, 9],
+        'subsample': [0.7, 0.8, 0.9, 1.0],
+        'colsample_bytree': [0.7, 0.8, 0.9, 1.0],
+        'reg_alpha': [0, 0.1, 1, 10],
+        'reg_lambda': [0, 0.1, 1, 10],
+        'scale_pos_weight': [1, 3, 5, 10]  # Handle class imbalance
+    }
+},
     "SVM": {
         "model": SVC(probability=True, random_state=42, class_weight='balanced'),
         "params": {
@@ -307,19 +340,37 @@ print("="*60)
 for name, config in models.items():
     print(f"\n--- Training {name} ---")
     
-    # Use RandomizedSearchCV for faster optimization
-    random_search = RandomizedSearchCV(
-        config["model"], 
-        config["params"], 
-        n_iter=50,  # More iterations for better optimization
-        cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
-        scoring='roc_auc', 
-        n_jobs=-1, 
-        verbose=1,
-        random_state=42
-    )
-    
-    random_search.fit(X_train_resampled, y_train_resampled)
+    # Suppress warnings specifically for LightGBM training
+    if name == "LightGBM":
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # Use RandomizedSearchCV for faster optimization
+            random_search = RandomizedSearchCV(
+                config["model"], 
+                config["params"], 
+                n_iter=50,  # More iterations for better optimization
+                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
+                scoring='roc_auc', 
+                n_jobs=-1, 
+                verbose=1,
+                random_state=42
+            )
+            
+            random_search.fit(X_train_resampled, y_train_resampled)
+    else:
+        # Use RandomizedSearchCV for faster optimization
+        random_search = RandomizedSearchCV(
+            config["model"], 
+            config["params"], 
+            n_iter=50,  # More iterations for better optimization
+            cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
+            scoring='roc_auc', 
+            n_jobs=-1, 
+            verbose=1,
+            random_state=42
+        )
+        
+        random_search.fit(X_train_resampled, y_train_resampled)
     
     best_model = random_search.best_estimator_
     trained_models[name] = best_model
@@ -389,7 +440,7 @@ results_df = results_df.sort_values('Test AUC', ascending=False)
 print(results_df.to_string(index=False))
 
 # Save results
-results_df.to_csv('model_performance_results.csv', index=False)
+results_df.to_csv('graph/model_performance_results.csv', index=False)
 
 # Enhanced ROC plotting
 plt.figure(figsize=(12, 10))
@@ -409,7 +460,7 @@ plt.title('ROC Curves Comparison - Enhanced Models', fontsize=14, fontweight='bo
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('enhanced_models_roc_curves.png', dpi=300, bbox_inches='tight')
+plt.savefig('graph/enhanced_models_roc_curves.png', dpi=300, bbox_inches='tight')
 
 # Individual ROC curves
 for name, data in roc_curves_data.items():
@@ -424,9 +475,359 @@ for name, data in roc_curves_data.items():
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(f'{name.replace(" ", "_").replace("-", "_")}_roc_curve.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'graph/{name.replace(" ", "_").replace("-", "_")}_roc_curve.png', dpi=300, bbox_inches='tight')
 
 print(f"\nEnhanced model training complete!")
-print(f"Results saved to: model_performance_results.csv")
+print(f"Results saved to: graph/model_performance_results.csv")
 print(f"ROC curves saved as PNG files")
 print(f"Best performing model: {results_df.iloc[0]['Model']} (AUC: {results_df.iloc[0]['Test AUC']:.4f})")
+
+# Feature importance and SHAP analysis for selected individual models
+print(f"\n=== FEATURE IMPORTANCE AND SHAP ANALYSIS ===")
+
+# Get top 5 individual models (excluding ensemble models) and select specific ones for SHAP
+all_individual_models = results_df[~results_df['Model'].str.contains('Ensemble')].head(5)
+print(f"Top 5 individual models: {all_individual_models['Model'].tolist()}")
+
+# Select models for SHAP analysis: XGBoost, Gradient Boosting, LightGBM, Logistic Regression
+# Skip Random Forest and SVM as requested
+shap_models = all_individual_models[all_individual_models['Model'].isin(['XGBoost', 'Gradient Boosting', 'LightGBM', 'Logistic Regression'])]
+print(f"Models selected for SHAP analysis: {shap_models['Model'].tolist()}")
+print(f"Skipping Random Forest and SVM SHAP plots as requested")
+
+# If Logistic Regression is not in individual models, add it from the full results
+if 'Logistic Regression' not in shap_models['Model'].values:
+    lr_model = results_df[results_df['Model'] == 'Logistic Regression']
+    if not lr_model.empty:
+        shap_models = pd.concat([shap_models, lr_model], ignore_index=True)
+        print(f"Added Logistic Regression to SHAP analysis")
+        print(f"Updated models for SHAP analysis: {shap_models['Model'].tolist()}")
+
+for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
+    model_name = model_row['Model']
+    model_auc = model_row['Test AUC']
+    
+    print(f"\n--- Rank {rank}: {model_name} (AUC: {model_auc:.4f}) ---")
+    
+    # Get the actual model object
+    model = trained_models[model_name]
+    
+    # Feature importance analysis
+    if model_name in ["XGBoost", "LightGBM", "Random Forest", "Gradient Boosting"]:
+        # Get feature importance for tree-based models
+        importance = model.feature_importances_
+        
+    elif model_name == "Logistic Regression":
+        # Get feature importance for linear models
+        importance = np.abs(model.coef_[0])
+        
+    elif model_name == "SVM":
+        # For SVM, we'll use SHAP values to estimate importance
+        importance = None
+    else:
+        importance = None
+    
+    if importance is not None:
+        # Get top features
+        feature_importance_df = pd.DataFrame({
+            'Feature': selected_features,
+            'Importance': importance
+        }).sort_values('Importance', ascending=False)
+        
+        print(f"Top 10 most important features:")
+        print(feature_importance_df.head(10))
+        
+        # Save feature importance
+        feature_importance_df.to_csv(f'graph/{model_name.replace(" ", "_")}_feature_importance.csv', index=False)
+        
+        # Show top 5 genes specifically
+        print(f"Top 5 most predictive genes for delirium:")
+        top_5_genes = feature_importance_df.head(5)
+        for i, (_, row) in enumerate(top_5_genes.iterrows(), 1):
+            print(f"{i}. {row['Feature']} (Importance: {row['Importance']:.6f})")
+    
+    # SHAP Analysis for each model
+    print(f"Generating SHAP plots for {model_name}...")
+    
+    try:
+        # Prepare data for SHAP
+        X_test_scaled = scaler.transform(X_test)
+        X_test_df = pd.DataFrame(X_test_scaled, columns=selected_features)
+        
+        # Create SHAP explainer based on model type
+        if model_name in ["XGBoost", "LightGBM", "Random Forest", "Gradient Boosting"]:
+            # Tree-based models
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_test_df)
+            
+            # For tree-based models, shap_values might be a list
+            if isinstance(shap_values, list):
+                shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+                
+        elif model_name == "Logistic Regression":
+            # Linear models
+            explainer = shap.LinearExplainer(model, X_test_df)
+            shap_values = explainer.shap_values(X_test_df)
+            
+        elif model_name == "SVM":
+            # Kernel models - use KernelExplainer
+            explainer = shap.KernelExplainer(model.predict_proba, shap.sample(X_test_df, 100))
+            shap_values = explainer.shap_values(X_test_df)
+            
+        else:
+            # Default to KernelExplainer for other models
+            explainer = shap.KernelExplainer(model.predict_proba, shap.sample(X_test_df, 100))
+            shap_values = explainer.shap_values(X_test_df)
+        
+        # 1. Summary Plot
+        plt.figure(figsize=(12, 8))
+        shap.summary_plot(shap_values, X_test_df, feature_names=selected_features, show=False)
+        plt.title(f'SHAP Summary Plot - {model_name} (Rank {rank}, AUC: {model_auc:.4f})', fontsize=16, fontweight='bold')
+        plt.tight_layout()
+        plt.savefig(f'graph/{model_name.replace(" ", "_")}_shap_summary.png', dpi=300, bbox_inches='tight')
+        plt.show()
+        
+        # 2. Feature Importance Bar Plot
+        plt.figure(figsize=(12, 8))
+        shap.summary_plot(shap_values, X_test_df, feature_names=selected_features, plot_type="bar", show=False)
+        plt.title(f'SHAP Feature Importance - {model_name} (Rank {rank}, AUC: {model_auc:.4f})', fontsize=16, fontweight='bold')
+        plt.tight_layout()
+        plt.savefig(f'graph/{model_name.replace(" ", "_")}_shap_importance.png', dpi=300, bbox_inches='tight')
+        plt.show()
+        
+        # 3. Force Plot for a sample prediction
+        sample_idx = 0  # First test sample
+        force_plot_success = False
+        try:
+            # Use new SHAP v0.20+ syntax
+            shap.plots.force(explainer.expected_value, shap_values[sample_idx], 
+                           X_test_df.iloc[sample_idx], show=False)
+            force_plot_success = True
+        except Exception as e:
+            print(f"Force plot failed for {model_name}: {str(e)}")
+            # Continue without force plot
+        
+        if force_plot_success:
+            plt.title(f'SHAP Force Plot - Sample {sample_idx} ({model_name}, Rank {rank})', fontsize=16, fontweight='bold')
+            plt.tight_layout()
+            plt.savefig(f'graph/{model_name.replace(" ", "_")}_shap_force.png', dpi=300, bbox_inches='tight')
+            plt.show()
+        
+        # 4. Dependence Plot for top feature
+        try:
+            if importance is not None:
+                top_feature = feature_importance_df.iloc[0]['Feature']
+            else:
+                # For SVM, use first feature as fallback
+                top_feature = selected_features[0]
+                
+            plt.figure(figsize=(10, 6))
+            shap.dependence_plot(top_feature, shap_values, X_test_df, show=False)
+            plt.title(f'SHAP Dependence Plot - {top_feature} ({model_name}, Rank {rank})', fontsize=16, fontweight='bold')
+            plt.tight_layout()
+            plt.savefig(f'graph/{model_name.replace(" ", "_")}_shap_dependence.png', dpi=300, bbox_inches='tight')
+            plt.show()
+        except Exception as e:
+            print(f"Dependence plot failed for {model_name}: {str(e)}")
+        
+        # Print top 10 SHAP values for this model
+        print(f"\n--- Top 10 SHAP Values for {model_name} ---")
+        try:
+            # Calculate mean absolute SHAP values across all samples
+            mean_shap_abs = np.mean(np.abs(shap_values), axis=0)
+            
+            # Create DataFrame with SHAP values
+            shap_df = pd.DataFrame({
+                'Feature': selected_features,
+                'Mean_ABS_SHAP': mean_shap_abs
+            }).sort_values('Mean_ABS_SHAP', ascending=False)
+            
+            print("Top 10 features by SHAP importance:")
+            print(shap_df.head(10).to_string(index=False))
+            
+            # Save SHAP values to CSV
+            shap_df.to_csv(f'graph/{model_name.replace(" ", "_")}_shap_values.csv', index=False)
+            print(f"SHAP values saved to: graph/{model_name.replace(' ', '_')}_shap_values.csv")
+            
+        except Exception as e:
+            print(f"Failed to calculate SHAP values summary: {str(e)}")
+        
+        print(f"✅ SHAP plots for {model_name} saved to graph/ folder")
+        
+    except Exception as e:
+        print(f"❌ SHAP analysis failed for {model_name}: {str(e)}")
+        print("This might be due to model type incompatibility or data issues.")
+
+# Analyze feature frequency across all models' top 10 SHAP features
+print("\n=== FEATURE FREQUENCY ANALYSIS ACROSS ALL MODELS ===")
+print("Analyzing which features appear most often in top 10 SHAP features...")
+
+# Dictionary to store feature counts
+feature_counts = {}
+all_top_features = []
+
+# Collect all top 10 features from each model
+for model_name in shap_models['Model'].values:
+    try:
+        # Load the SHAP values CSV for this model
+        shap_csv_path = f'graph/{model_name.replace(" ", "_")}_shap_values.csv'
+        if os.path.exists(shap_csv_path):
+            shap_df = pd.read_csv(shap_csv_path)
+            # Get top 10 features
+            top_10_features = shap_df.head(10)['Feature'].tolist()
+            all_top_features.extend(top_10_features)
+            
+            # Count occurrences
+            for feature in top_10_features:
+                feature_counts[feature] = feature_counts.get(feature, 0) + 1
+                
+            print(f"{model_name}: {len(top_10_features)} features processed")
+        else:
+            print(f"Warning: SHAP CSV not found for {model_name}")
+    except Exception as e:
+        print(f"Error processing {model_name}: {str(e)}")
+
+# Calculate average SHAP values for tie-breaking
+feature_avg_shap = {}
+for feature in feature_counts.keys():
+    shap_values_list = []
+    for model_name in shap_models['Model'].values:
+        try:
+            shap_csv_path = f'graph/{model_name.replace(" ", "_")}_shap_values.csv'
+            if os.path.exists(shap_csv_path):
+                shap_df = pd.read_csv(shap_csv_path)
+                if feature in shap_df['Feature'].values:
+                    # Get SHAP value for this feature in this model
+                    feature_shap = shap_df[shap_df['Feature'] == feature]['Mean_ABS_SHAP'].iloc[0]
+                    shap_values_list.append(feature_shap)
+        except:
+            continue
+    
+    if shap_values_list:
+        feature_avg_shap[feature] = np.mean(shap_values_list)
+    else:
+        feature_avg_shap[feature] = 0.0
+
+# Sort features by frequency first, then by average SHAP values (tie-breaker)
+sorted_features = sorted(feature_counts.items(), 
+                        key=lambda x: (x[1], feature_avg_shap[x[0]]), 
+                        reverse=True)
+
+print(f"\n📊 FEATURE FREQUENCY RANKING (Top 5 Most Common)")
+print("=" * 70)
+print(f"{'Rank':<4} {'Feature':<20} {'Appearances':<12} {'Avg_SHAP':<12} {'Models':<20}")
+print("-" * 70)
+
+for rank, (feature, count) in enumerate(sorted_features[:5], 1):
+    # Find which models this feature appears in
+    models_with_feature = []
+    for model_name in shap_models['Model'].values:
+        try:
+            shap_csv_path = f'graph/{model_name.replace(" ", "_")}_shap_values.csv'
+            if os.path.exists(shap_csv_path):
+                shap_df = pd.read_csv(shap_csv_path)
+                top_10_features = shap_df.head(10)['Feature'].tolist()
+                if feature in top_10_features:
+                    models_with_feature.append(model_name)
+        except:
+            continue
+    
+    models_str = ", ".join(models_with_feature)
+    avg_shap = feature_avg_shap[feature]
+    print(f"{rank:<4} {feature:<20} {count:<12} {avg_shap:<12.4f} {models_str:<20}")
+
+# Save the enhanced frequency analysis to CSV
+enhanced_frequency_df = pd.DataFrame([
+    {
+        'Feature': feature, 
+        'Appearances': count, 
+        'Avg_SHAP': feature_avg_shap[feature],
+        'Models': ', '.join([m for m in shap_models['Model'].values if feature in pd.read_csv(f'graph/{m.replace(" ", "_")}_shap_values.csv').head(10)['Feature'].tolist()])
+    }
+    for feature, count in sorted_features
+])
+
+enhanced_frequency_df.to_csv('graph/feature_frequency_analysis.csv', index=False)
+print(f"\n📁 Enhanced feature frequency analysis saved to: graph/feature_frequency_analysis.csv")
+print("Includes tie-breaking based on average SHAP values across all models")
+
+# Comprehensive visualization of all models' test AUCs
+print("\n--- Generating Comprehensive Visualizations ---")
+
+# 1. Bar chart of all test AUCs
+plt.figure(figsize=(14, 8))
+models_list = results_df['Model'].tolist()
+aucs_list = results_df['Test AUC'].tolist()
+
+# Create color-coded bars
+colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
+bars = plt.bar(range(len(models_list)), aucs_list, color=colors[:len(models_list)], alpha=0.8, edgecolor='black', linewidth=1)
+
+# Add value labels on bars
+for i, (bar, auc) in enumerate(zip(bars, aucs_list)):
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+             f'{auc:.4f}', ha='center', va='bottom', fontweight='bold', fontsize=10)
+
+plt.xlabel('Models', fontsize=14, fontweight='bold')
+plt.ylabel('Test AUC Score', fontsize=14, fontweight='bold')
+plt.title('All Models Test AUC Performance Comparison', fontsize=16, fontweight='bold')
+plt.xticks(range(len(models_list)), models_list, rotation=45, ha='right')
+plt.ylim(0, 1.0)
+plt.grid(True, alpha=0.3, axis='y')
+plt.tight_layout()
+plt.savefig('graph/all_models_test_auc_comparison.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+# 2. Horizontal bar chart for better readability
+plt.figure(figsize=(12, 10))
+y_pos = np.arange(len(models_list))
+bars = plt.barh(y_pos, aucs_list, color=colors[:len(models_list)], alpha=0.8, edgecolor='black', linewidth=1)
+
+# Add value labels
+for i, (bar, auc) in enumerate(zip(bars, aucs_list)):
+    width = bar.get_width()
+    plt.text(width + 0.01, bar.get_y() + bar.get_height()/2.,
+             f'{auc:.4f}', ha='left', va='center', fontweight='bold', fontsize=11)
+
+plt.yticks(y_pos, models_list)
+plt.xlabel('Test AUC Score', fontsize=14, fontweight='bold')
+plt.title('All Models Test AUC Performance (Horizontal View)', fontsize=16, fontweight='bold')
+plt.xlim(0, 1.0)
+plt.grid(True, alpha=0.3, axis='x')
+plt.tight_layout()
+plt.savefig('graph/all_models_test_auc_horizontal.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+# 3. Performance ranking visualization
+plt.figure(figsize=(10, 8))
+ranked_models = results_df.sort_values('Test AUC', ascending=True)
+y_pos = np.arange(len(ranked_models))
+bars = plt.barh(y_pos, ranked_models['Test AUC'], color=plt.cm.viridis(np.linspace(0, 1, len(ranked_models))), alpha=0.8)
+
+# Add ranking numbers and AUC values
+for i, (idx, row) in enumerate(ranked_models.iterrows()):
+    width = row['Test AUC']
+    plt.text(width + 0.01, i, f'#{len(ranked_models)-i} - {width:.4f}', 
+             ha='left', va='center', fontweight='bold', fontsize=10)
+
+plt.yticks(y_pos, ranked_models['Model'])
+plt.xlabel('Test AUC Score', fontsize=14, fontweight='bold')
+plt.title('Models Ranked by Test AUC Performance', fontsize=16, fontweight='bold')
+plt.xlim(0, 1.0)
+plt.grid(True, alpha=0.3, axis='x')
+plt.tight_layout()
+plt.savefig('graph/all_models_auc_ranking.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("All results and visualizations saved to 'graph' folder:")
+print("- graph/model_performance_results.csv")
+print("- graph/all_models_test_auc_comparison.png")
+print("- graph/all_models_test_auc_horizontal.png")
+print("- graph/all_models_auc_ranking.png")
+print("- All individual ROC curve PNGs in graph/ folder")
+print("- graph/enhanced_models_roc_curves.png")
+print("- Feature importance CSV files in graph/ folder")
+print("- SHAP plots for 4 selected models: XGBoost, Gradient Boosting, LightGBM, Logistic Regression")
+print("- SHAP values CSV files with top features for each model")
+print("- Skipped Random Forest and SVM SHAP plots as requested")
