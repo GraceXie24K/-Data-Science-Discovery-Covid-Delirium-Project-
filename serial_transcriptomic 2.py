@@ -641,6 +641,8 @@ for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
         plt.title(f'SHAP Summary Plot - {model_name} (AUC Rank {auc_rank}, AUC: {model_auc:.4f})', fontsize=16, fontweight='bold')
         plt.tight_layout()
         plt.savefig(f'serialGraph/{model_name.replace(" ", "_")}_shap_summary.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'Figure 5/{model_name.replace(" ", "_").replace("-", "_")}_shap_summary.tiff', format = 'tiff', dpi=300, bbox_inches='tight')
+
         plt.show()
         
         # 2. Feature Importance Bar Plot
@@ -648,7 +650,9 @@ for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
         shap.summary_plot(shap_values, X_test_df, feature_names=selected_features, plot_type="bar", show=False)
         plt.title(f'SHAP Feature Importance - {model_name} (AUC Rank {auc_rank}, AUC: {model_auc:.4f})', fontsize=16, fontweight='bold')
         plt.tight_layout()
-        plt.savefig(f'serialGraph/{model_name.replace(" ", "_")}_shap_importance.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'serialGraph/{model_name.replace(" ", "_")}_shap_importance.tiff', dpi=300, bbox_inches='tight')
+        plt.savefig(f'Figure 5/{model_name.replace(" ", "_").replace("-", "_")}_shap_importance.tiff', format = 'tiff', dpi=300, bbox_inches='tight')
+
         plt.show()
         
         # 3. Force Plot for a sample prediction
@@ -834,6 +838,9 @@ for name, data in roc_curves_data.items():
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(f'serialGraph/{name.replace(" ", "_").replace("-", "_")}_roc_curve.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'Figure 5/{name.replace(" ", "_").replace("-", "_")}_roc_curve.tiff', format = 'tiff', dpi=300, bbox_inches='tight')
+
+
     plt.show()
 
 # Comprehensive visualization of all models' test AUCs
