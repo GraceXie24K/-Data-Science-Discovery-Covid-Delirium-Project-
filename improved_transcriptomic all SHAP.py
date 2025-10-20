@@ -463,6 +463,7 @@ for name, data in roc_curves_data.items():
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(f'graph/{name.replace(" ", "_").replace("-", "_")}_roc_curve.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'Figure 4/{name.replace(" ", "_").replace("-", "_")}_roc_curve.tiff', format = "tiff", dpi=300, bbox_inches='tight')
 
 print(f"\nEnhanced model training complete!")
 print(f"Results saved to: graph/model_performance_results.csv")
@@ -572,6 +573,7 @@ for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
         plt.title(f'SHAP Summary Plot - {model_name} (Rank {rank}, AUC: {model_auc:.4f})', fontsize=16, fontweight='bold')
         plt.tight_layout()
         plt.savefig(f'graph/{model_name.replace(" ", "_")}_shap_summary.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'Figure 4/{model_name.replace(" ", "_")}_shap_summary.tiff', format = "tiff", dpi=300, bbox_inches='tight')
         plt.show()
         
         # 2. Feature Importance Bar Plot
