@@ -1,23 +1,31 @@
 Feature,Appearances,Avg_SHAP,Models
-IL1R2,4,0.4825456992967524,"XGBoost, Gradient Boosting, LightGBM, Logistic Regression"
-SLC36A1,3,0.986176416619917,"XGBoost, Gradient Boosting, LightGBM"
-MAP2K3,3,0.8493661241770429,"XGBoost, Gradient Boosting, LightGBM"
-RPL29,3,0.5193197789643567,"XGBoost, Gradient Boosting, LightGBM"
-SMN1,3,0.4514922901315079,"XGBoost, Gradient Boosting, Logistic Regression"
-RCN2,3,0.44634075264516027,"XGBoost, Gradient Boosting, LightGBM"
-ENSG00000282572,3,0.29356346597965244,"XGBoost, Gradient Boosting, LightGBM"
-RPS7,2,0.4937219051899196,"Gradient Boosting, LightGBM"
-CHCHD10,2,0.28981967909190354,"XGBoost, Logistic Regression"
-EEF1AKMT2,2,0.24488628446908664,"XGBoost, LightGBM"
-LSM12,1,0.4115071022389781,Logistic Regression
-STEAP4,1,0.4041244702932376,Logistic Regression
-KLHL21,1,0.3654890771887795,Logistic Regression
-ARL4C,1,0.3413471681430327,Logistic Regression
-SUSD1,1,0.302398726573494,Logistic Regression
-UBE2O,1,0.28914818627786876,Logistic Regression
-CERS5,1,0.2342788587185526,Logistic Regression
-ACTN1,1,0.23226183689588503,XGBoost
-GPR180,1,0.21043632422820138,LightGBM
-PRPF18,1,0.19048425521364182,LightGBM
-ENSG00000276533,1,0.15989055089272125,Gradient Boosting
-MTMR3,1,0.14183021217256422,Gradient Boosting
+SMN1,5,0.33251620300845264,"XGBoost, Voting Ensemble, Stacking Ensemble, Gradient Boosting, Logistic Regression"
+IL1R2,6,0.328403859841955,"XGBoost, Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM, Logistic Regression"
+CHCHD10,4,0.29515987489404977,"XGBoost, SVM, Stacking Ensemble, Logistic Regression"
+SLC36A1,6,0.6767787095508275,"XGBoost, Random Forest, Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM"
+MAP2K3,6,0.5946819008531109,"XGBoost, Random Forest, Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM"
+RPL29,6,0.3355261098613435,"XGBoost, Random Forest, Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM"
+RCN2,6,0.20740977368077926,"XGBoost, Random Forest, Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM"
+ENSG00000282572,6,0.19756244349130467,"XGBoost, Random Forest, Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM"
+ACTN1,3,0.05937993636876444,"XGBoost, Random Forest, Voting Ensemble"
+EEF1AKMT2,2,0.1768941644456414,"XGBoost, LightGBM"
+ARL4C,3,0.4061202009338522,"Voting Ensemble, Stacking Ensemble, Logistic Regression"
+RPS7,4,0.3263234061847556,"Voting Ensemble, Stacking Ensemble, Gradient Boosting, LightGBM"
+LSM12,2,0.7882195195671978,"SVM, Logistic Regression"
+STEAP4,2,0.7686729133020026,"SVM, Logistic Regression"
+KLHL21,2,0.710976660042074,"SVM, Logistic Regression"
+UBE2O,2,0.5700807492376229,"SVM, Logistic Regression"
+DCUN1D1,1,0.0223143586141589,SVM
+YOD1,1,0.0202449170980981,SVM
+CD27,1,0.017301869157619,SVM
+PTGES,1,0.0159322091871211,SVM
+LTV1,1,0.0145493928584304,SVM
+MTMR3,2,0.2528197925311504,"Random Forest, Gradient Boosting"
+RBMX,1,0.0296088147508635,Random Forest
+RPL31,1,0.011595486002841,Random Forest
+ZFYVE1,1,0.0085805830359345,Random Forest
+SUSD1,1,1.1921658018015675,Logistic Regression
+CERS5,1,0.9367215055915328,Logistic Regression
+PRPF18,1,0.6094791301606161,LightGBM
+GPR180,1,0.2451491649339764,LightGBM
+ENSG00000276533,1,0.3656122645266037,Gradient Boosting
