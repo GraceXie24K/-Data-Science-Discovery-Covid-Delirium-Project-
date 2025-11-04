@@ -14,7 +14,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier, StackingClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import roc_curve, roc_auc_score, precision_score, recall_score, classification_report, confusion_matrix
+from sklearn.metrics import roc_curve, roc_auc_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import SelectKBest, f_classif, RFE, SelectFromModel, mutual_info_classif
 from sklearn.decomposition import PCA
@@ -63,6 +63,7 @@ def transform_colname(col):
 print("Loading data...")
 admission_df = load_table('/users/audreysu/AudreyCovidProject/admission_norm_gene_exp_df.csv')
 demographic_df = load_table('/users/audreysu/AudreyCovidProject/delirium cohort demographics.xlsx')
+print((demographic_df.shape))
 gene_symbols = load_table('/users/audreysu/AudreyCovidProject/gene_symbols.csv')
 
 # Data preprocessing
@@ -87,6 +88,8 @@ merged_df = merged_df.rename(columns={"Delirium at any time during hospitalizati
 
 target = "Delirium"
 merged_df = merged_df.dropna(subset=[target]).reset_index(drop=True)
+
+# print(merged_df)
 
 print(f"Original data shape: {merged_df.shape}")
 print(f"Target distribution: {merged_df[target].value_counts()}")
@@ -372,8 +375,17 @@ for name, config in models.items():
     y_pred_proba = best_model.predict_proba(X_test_scaled)[:, 1]
     test_auc = roc_auc_score(y_test, y_pred_proba)
     fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
-    
-    roc_curves_data[name] = {"fpr": fpr, "tpr": tpr, "auc": test_auc}
+    # Calculate recall at 0.5 threshold
+    try:
+        test_recall = recall_score(y_test, (y_pred_proba > 0.5).astype(int))
+        test_precision = precision_score(y_test, (y_pred_proba > 0.5).astype(int))
+        test_f1 = f1_score(y_test, (y_pred_proba > 0.5).astype(int))
+    except Exception:
+        test_recall = np.nan
+        test_precision = np.nan
+        test_f1 = np.nan
+
+    roc_curves_data[name] = {"fpr": fpr, "tpr": tpr, "auc": test_auc, "recall": test_recall, "precision": test_precision, "f1": test_f1}
     
     print(f"Best parameters: {random_search.best_params_}")
     print(f"CV AUC: {cv_score:.4f}")
@@ -392,10 +404,15 @@ voting_classifier.fit(X_train_resampled, y_train_resampled)
 y_pred_voting = voting_classifier.predict_proba(X_test_scaled)[:, 1]
 voting_auc = roc_auc_score(y_test, y_pred_voting)
 fpr_voting, tpr_voting, _ = roc_curve(y_test, y_pred_voting)
-
-roc_curves_data["Voting Ensemble"] = {"fpr": fpr_voting, "tpr": tpr_voting, "auc": voting_auc}
+voting_recall = recall_score(y_test, (y_pred_voting > 0.5).astype(int))
+voting_precision = precision_score(y_test, (y_pred_voting > 0.5).astype(int))
+voting_f1 = f1_score(y_test, (y_pred_voting > 0.5).astype(int))
+roc_curves_data["Voting Ensemble"] = {"fpr": fpr_voting, "tpr": tpr_voting, "auc": voting_auc, "recall": voting_recall, "precision": voting_precision, "f1": voting_f1}
 trained_models["Voting Ensemble"] = voting_classifier  # Add to trained_models for SHAP analysis
 print(f"Voting Ensemble AUC: {voting_auc:.4f}")
+print(f"Voting Ensemble Recall: {voting_recall:.4f}")
+print(f"Voting Ensemble Precision: {voting_precision:.4f}")
+print(f"Voting Ensemble F1: {voting_f1:.4f}")
 
 # Stacking Classifier
 base_models = [(name, model) for name, model in trained_models.items()]
@@ -411,10 +428,15 @@ stacking_classifier.fit(X_train_resampled, y_train_resampled)
 y_pred_stacking = stacking_classifier.predict_proba(X_test_scaled)[:, 1]
 stacking_auc = roc_auc_score(y_test, y_pred_stacking)
 fpr_stacking, tpr_stacking, _ = roc_curve(y_test, y_pred_stacking)
-
-roc_curves_data["Stacking Ensemble"] = {"fpr": fpr_stacking, "tpr": tpr_stacking, "auc": stacking_auc}
+stacking_recall = recall_score(y_test, (y_pred_stacking > 0.5).astype(int))
+stacking_precision = precision_score(y_test, (y_pred_stacking > 0.5).astype(int))
+stacking_f1 = f1_score(y_test, (y_pred_stacking > 0.5).astype(int))
+roc_curves_data["Stacking Ensemble"] = {"fpr": fpr_stacking, "tpr": tpr_stacking, "auc": stacking_auc, "recall": stacking_recall, "precision": stacking_precision, "f1": stacking_f1}
 trained_models["Stacking Ensemble"] = stacking_classifier  # Add to trained_models for SHAP analysis
 print(f"Stacking Ensemble AUC: {stacking_auc:.4f}")
+print(f"Stacking Ensemble Recall: {stacking_recall:.4f}")
+print(f"Stacking Ensemble Precision: {stacking_precision:.4f}")
+print(f"Stacking Ensemble F1: {stacking_f1:.4f}")
 
 # Results summary
 print("\n" + "="*60)
@@ -424,6 +446,9 @@ print("="*60)
 results_df = pd.DataFrame({
     'Model': list(roc_curves_data.keys()),
     'Test AUC': [data['auc'] for data in roc_curves_data.values()],
+    'Recall': [data.get('recall', np.nan) for data in roc_curves_data.values()],
+    'Precision': [data.get('precision', np.nan) for data in roc_curves_data.values()],
+    'F1': [data.get('f1', np.nan) for data in roc_curves_data.values()],
     'CV AUC': [cv_scores.get(name, 'N/A') for name in roc_curves_data.keys()]
 })
 
@@ -671,6 +696,13 @@ for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
         # Save feature importance to CSV
         feature_importance_df.to_csv(f'graph/{model_name.replace(" ", "_")}_feature_importance.csv', index=False)
         print(f"Feature importance saved to: graph/{model_name.replace(' ', '_')}_feature_importance.csv")
+        # Save top-20 predictive genes for this model
+        try:
+            top20 = feature_importance_df.head(20)
+            top20.to_csv(f'graph/{model_name.replace(" ", "_")}_top20_genes.csv', index=False)
+            print(f"💾 Saved top-20 genes for {model_name} to graph/{model_name.replace(' ', '_')}_top20_genes.csv")
+        except Exception as e:
+            print(f"❌ Failed to save top-20 genes for {model_name}: {e}")
         
     elif model_name == "Logistic Regression":
         # Get feature importance for logistic regression
@@ -908,6 +940,13 @@ for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
             # Save SHAP values to CSV
             shap_df.to_csv(f'graph/{model_name.replace(" ", "_")}_shap_values.csv', index=False)
             print(f"SHAP values saved to: graph/{model_name.replace(' ', '_')}_shap_values.csv")
+            # Save top-20 SHAP features as predictive genes
+            try:
+                top20_shap = shap_df.head(20)
+                top20_shap.to_csv(f'graph/{model_name.replace(" ", "_")}_top20_genes.csv', index=False)
+                print(f"💾 Saved top-20 SHAP genes for {model_name} to graph/{model_name.replace(' ', '_')}_top20_genes.csv")
+            except Exception as e:
+                print(f"❌ Failed to save top-20 SHAP genes for {model_name}: {e}")
             
         except Exception as e:
             print(f"Failed to calculate SHAP values summary: {str(e)}")
@@ -1009,3 +1048,125 @@ print("- Feature importance CSV files in graph/ folder")
 print("- SHAP plots for 8 selected models: XGBoost, Gradient Boosting, LightGBM, Logistic Regression, Random Forest, SVM, Voting Ensemble, Stacking Ensemble")
 print("- SHAP values CSV files with top features for each model")
 print("- Generated SHAP plots for all selected models including Random Forest, SVM, and Ensemble models")
+
+
+# ------------------------------------------------------------------
+# Generate a summary dataframe with Accuracy, Precision, Recall, F1, AUC
+# for selected models and save it to CSV
+# ------------------------------------------------------------------
+try:
+    models_to_summarize = [
+        'Stacking Ensemble', 'Voting Ensemble', 'XGBoost', 'SVM',
+        'LightGBM', 'Gradient Boosting', 'Random Forest', 'Logistic Regression'
+    ]
+
+    summary_rows = []
+    for mname in models_to_summarize:
+        if mname not in trained_models:
+            print(f"Warning: model '{mname}' not found in trained_models; skipping")
+            continue
+        model = trained_models[mname]
+
+        y_prob = None
+        y_pred = None
+        # Prefer predict_proba
+        try:
+            y_prob = model.predict_proba(X_test_scaled)[:, 1]
+            y_pred = (y_prob > 0.5).astype(int)
+        except Exception:
+            try:
+                df_scores = model.decision_function(X_test_scaled)
+                # normalize decision scores to [0,1] for auc if possible
+                minv, maxv = float(df_scores.min()), float(df_scores.max())
+                if maxv > minv:
+                    y_prob = (df_scores - minv) / (maxv - minv)
+                else:
+                    y_prob = (df_scores > 0).astype(int)
+                y_pred = (df_scores > 0).astype(int)
+            except Exception:
+                try:
+                    y_pred = model.predict(X_test_scaled)
+                except Exception as e:
+                    print(f"Failed to get predictions for {mname}: {e}")
+                    continue
+
+        acc = accuracy_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred, zero_division=0)
+        rec = recall_score(y_test, y_pred, zero_division=0)
+        f1v = f1_score(y_test, y_pred, zero_division=0)
+        try:
+            aucv = roc_auc_score(y_test, y_prob) if y_prob is not None else np.nan
+        except Exception:
+            aucv = np.nan
+
+        summary_rows.append({
+            'Model': mname,
+            'Accuracy': acc,
+            'Precision': prec,
+            'Recall': rec,
+            'F1': f1v,
+            'AUC': aucv
+        })
+
+    per_model_summary_df = pd.DataFrame(summary_rows)
+    # Ensure graph folder exists
+    os.makedirs('graph', exist_ok=True)
+    per_model_summary_df.to_csv('graph/per_model_summary_metrics.csv', index=False)
+    print("Saved per-model summary metrics to: graph/per_model_summary_metrics.csv")
+    print(per_model_summary_df.to_string(index=False))
+except Exception as e:
+    print(f"Error while generating per-model summary dataframe: {e}")
+
+
+# ------------------------------------------------------------------
+# Generate and print table of best F1 scores for all models
+# ------------------------------------------------------------------
+try:
+    print("\n=== BEST F1 SCORES FOR ALL MODELS ===")
+    f1_summary = []
+
+    for model_name, model_data in roc_curves_data.items():
+        f1_value = model_data.get('f1', np.nan)
+        auc_value = model_data.get('auc', np.nan)
+        recall_value = model_data.get('recall', np.nan)
+        precision_value = model_data.get('precision', np.nan)
+        f1_summary.append({
+            'Model': model_name,
+            'F1 Score': f1_value,
+            'Precision': precision_value,
+            'Recall': recall_value,
+            'AUC': auc_value
+        })
+
+    f1_summary_df = pd.DataFrame(f1_summary)
+    f1_summary_df = f1_summary_df.sort_values(by='F1 Score', ascending=False)
+    print(f1_summary_df.to_string(index=False))
+
+    # Save the F1 score summary table to a CSV file
+    f1_summary_df.to_csv('graph/f1_score_summary.csv', index=False)
+    print("\nSaved F1 score summary table to: graph/f1_score_summary.csv")
+
+except Exception as e:
+    print(f"Error while generating F1 score summary table: {e}")
+
+for model_name, data in roc_curves_data.items():
+    roc_df = pd.DataFrame({
+        'FPR': data['fpr'],
+        'TPR': data['tpr']
+    })
+    roc_df.to_csv(f'graph/{model_name.replace(" ", "_")}_roc_points.csv', index=False)
+    print(f"Saved ROC points for {model_name} -> graph/{model_name.replace(' ', '_')}_roc_points.csv")
+
+# Export top-20 SHAP features for each model
+for model_name in shap_models['Model'].values:
+    try:
+        shap_csv_path = f'graph/{model_name.replace(" ", "_")}_shap_values.csv'
+        if os.path.exists(shap_csv_path):
+            shap_df = pd.read_csv(shap_csv_path)
+            top20_shap = shap_df.head(20)
+            top20_shap.to_csv(f'graph/{model_name.replace(" ", "_")}_top20_shap_features.csv', index=False)
+            print(f"Saved top-20 SHAP features for {model_name} -> graph/{model_name.replace(' ', '_')}_top20_shap_features.csv")
+        else:
+            print(f"Warning: SHAP CSV not found for {model_name}, skipping top-20 export")
+    except Exception as e:
+        print(f"Error exporting top-20 SHAP for {model_name}: {e}")
