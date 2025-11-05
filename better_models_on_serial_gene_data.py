@@ -329,7 +329,7 @@ for name, model in models.items():
         continue
 
     try:
-        fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+        fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
         auc_score = roc_auc_score(y_test, y_pred_proba)
         print(f"{name} AUC: {auc_score:.3f}")
 
@@ -342,11 +342,25 @@ for name, model in models.items():
         plt.title(f'ROC curve — {name}')
         plt.legend(loc='lower right')
         plt.grid(alpha=0.3)
-        # Ensure output directory exists and save figure
+        # Ensure output directory exists and save figure and ROC points
         try:
             os.makedirs('modelsGraph', exist_ok=True)
             plt.tight_layout()
             plt.savefig(f'modelsGraph/{name}_roc.png', dpi=300, bbox_inches='tight')
+            # Save ROC points (FPR, TPR, Thresholds) to CSV for downstream use
+            try:
+                # Save ROC points and also provide standard 'x'/'y' columns (x=FPR, y=TPR)
+                roc_df = pd.DataFrame({
+                    'FPR': fpr,
+                    'TPR': tpr,
+                    'Thresholds': thresholds
+                })
+                roc_df['x'] = roc_df['FPR']
+                roc_df['y'] = roc_df['TPR']
+                roc_df.to_csv(f'modelsGraph/{name}_roc_points.csv', index=False)
+                print(f"💾 Saved ROC points for {name} to modelsGraph/{name}_roc_points.csv")
+            except Exception as e_csv:
+                print(f"❌ Failed to save ROC points CSV for {name}: {e_csv}")
             print(f"💾 Saved ROC plot for {name} to modelsGraph/{name}_roc.png")
         except Exception as e:
             print(f"❌ Failed to save ROC plot for {name}: {e}")
@@ -448,7 +462,7 @@ if len(ensemble_models) > 1:
     
     # Plot ensemble ROC curve
     plt.figure(figsize=(8,6))
-    fpr, tpr, _ = roc_curve(y_test, ensemble_predictions)
+    fpr, tpr, thresholds = roc_curve(y_test, ensemble_predictions)
     plt.plot(fpr, tpr, lw=2, label=f"Ensemble (AUC={ensemble_auc:.3f})")
     plt.plot([0,1], [0,1], linestyle='--', color='gray', label='Chance')
     plt.xlabel('False Positive Rate')
@@ -456,11 +470,22 @@ if len(ensemble_models) > 1:
     plt.title('ROC curve — Ensemble Model')
     plt.legend(loc='lower right')
     plt.grid(alpha=0.3)
-    # Save ensemble ROC
+    # Save ensemble ROC and points
     try:
         os.makedirs('modelsGraph', exist_ok=True)
         plt.tight_layout()
         plt.savefig('modelsGraph/Ensemble_roc.png', dpi=300, bbox_inches='tight')
+        # Save ROC points for ensemble
+        try:
+            ensemble_roc_df = pd.DataFrame({
+                'FPR': fpr,
+                'TPR': tpr,
+                'Thresholds': thresholds
+            })
+            ensemble_roc_df.to_csv('modelsGraph/Ensemble_roc_points.csv', index=False)
+            print(f"💾 Saved ROC points for Ensemble to modelsGraph/Ensemble_roc_points.csv")
+        except Exception as e_csv:
+            print(f"❌ Failed to save Ensemble ROC points CSV: {e_csv}")
         print(f"💾 Saved ROC plot for Ensemble to modelsGraph/Ensemble_roc.png")
     except Exception as e:
         print(f"❌ Failed to save Ensemble ROC plot: {e}")
@@ -777,7 +802,8 @@ if len(ensemble_models) >= 3:
                 if preds is None:
                     continue
                 try:
-                    fpr_e, tpr_e, _ = roc_curve(y_test, preds)
+                    # Compute ROC points and save both the plot and a CSV of points (with x,y)
+                    fpr_e, tpr_e, th_e = roc_curve(y_test, preds)
                     auc_e = roc_auc_score(y_test, preds)
                     plt.figure(figsize=(8,6))
                     plt.plot(fpr_e, tpr_e, lw=2, label=f"{ens_name} (AUC={auc_e:.3f})")
@@ -790,7 +816,18 @@ if len(ensemble_models) >= 3:
                     plt.tight_layout()
                     safe_name = ens_name.replace(' ', '_')
                     plt.savefig(f'modelsGraph/{safe_name}_roc.png', dpi=300, bbox_inches='tight')
+
+                    # Save ROC points CSV with FPR/TPR/Thresholds and normalized x/y columns
+                    ens_roc_df = pd.DataFrame({
+                        'FPR': fpr_e,
+                        'TPR': tpr_e,
+                        'Thresholds': th_e
+                    })
+                    ens_roc_df['x'] = ens_roc_df['FPR']
+                    ens_roc_df['y'] = ens_roc_df['TPR']
+                    ens_roc_df.to_csv(f'modelsGraph/{safe_name}_roc_points.csv', index=False)
                     print(f"💾 Saved ROC plot for {ens_name} to modelsGraph/{safe_name}_roc.png")
+                    print(f"💾 Saved ROC points for {ens_name} to modelsGraph/{safe_name}_roc_points.csv")
                 except Exception as e:
                     print(f"❌ Failed to create/save ROC for {ens_name}: {e}")
                 finally:
@@ -944,6 +981,15 @@ if ENABLE_COMPREHENSIVE_SHAP_ANALYSIS and SHAP_AVAILABLE:
                 # Save feature importance
                 feature_importance_df.to_csv(f'{results_dir}/{model_name}_feature_importance.csv', index=False)
                 print(f"💾 Feature importance saved to: {results_dir}/{model_name}_feature_importance.csv")
+
+                # If this is the Bidirectional GRU model, also save the top-20 features (genes) and their SHAP values
+                try:
+                    if model_name == 'Bidirectional_GRU':
+                        top20_df = feature_importance_df.head(20).copy()
+                        top20_df.to_csv(f'{results_dir}/{model_name}_top20_shap.csv', index=False)
+                        print(f"💾 Top-20 SHAP features saved to: {results_dir}/{model_name}_top20_shap.csv")
+                except Exception as e_top20:
+                    print(f"❌ Failed to save top-20 SHAP CSV for {model_name}: {e_top20}")
                 
                 # Store for cross-model analysis
                 shap_results[model_name] = {
