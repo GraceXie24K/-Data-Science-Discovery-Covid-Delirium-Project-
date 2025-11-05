@@ -478,6 +478,24 @@ print(results_df.to_string(index=False))
 # Save results
 results_df.to_csv('graph2/model_performance_results.csv', index=False)
 
+# Save per-model ROC points (FPR/TPR) to CSVs with x/y columns for downstream use
+os.makedirs('graph2', exist_ok=True)
+for name, data in roc_curves_data.items():
+    try:
+        fpr = data.get('fpr')
+        tpr = data.get('tpr')
+        if fpr is None or tpr is None:
+            print(f"Warning: no ROC points available for {name}")
+            continue
+        roc_df = pd.DataFrame({'FPR': np.asarray(fpr), 'TPR': np.asarray(tpr)})
+        roc_df['x'] = roc_df['FPR']
+        roc_df['y'] = roc_df['TPR']
+        safe_name = name.replace(' ', '_').replace('/', '_')
+        roc_df.to_csv(f'graph2/{safe_name}_roc_points.csv', index=False)
+        print(f"💾 Saved ROC points for {name} to graph2/{safe_name}_roc_points.csv")
+    except Exception as e:
+        print(f"❌ Failed to save ROC points for {name}: {e}")
+
 # Enhanced ROC plotting
 plt.figure(figsize=(12, 10))
 
