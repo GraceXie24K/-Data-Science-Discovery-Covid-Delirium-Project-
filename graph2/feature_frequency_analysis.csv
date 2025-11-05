@@ -1,0 +1,32 @@
+Feature,Appearances,Avg_SHAP,Models
+RNF24,2,0.053613734304884295,"XGBoost, Random Forest"
+SLC2A4RG,1,0.13761424,XGBoost
+ZSWIM8,3,0.0,"Stacking Ensemble, Voting Ensemble, Logistic Regression"
+Remdesivir_Yes,2,0.00045548778407365,"Stacking Ensemble, Voting Ensemble"
+ENSG00000282572,2,0.0,"Stacking Ensemble, Voting Ensemble"
+RBM45,2,0.0,"Stacking Ensemble, Voting Ensemble"
+KIF11,2,0.0,"Stacking Ensemble, Voting Ensemble"
+KDM4C,2,0.0,"Stacking Ensemble, Voting Ensemble"
+MCL1,2,0.0,"Stacking Ensemble, Voting Ensemble"
+RPL7AP50,2,0.0,"Stacking Ensemble, Voting Ensemble"
+ICAM3,2,0.0,"Stacking Ensemble, Voting Ensemble"
+HLA-DRA,2,0.0,"Stacking Ensemble, Voting Ensemble"
+ABALON,2,0.5925586606023407,"Random Forest, Gradient Boosting"
+DDX50,2,0.2598521295938188,"Random Forest, Gradient Boosting"
+POP5,2,0.23708804276230713,"Random Forest, Gradient Boosting"
+ENSG00000276345,1,0.4164950760744735,Logistic Regression
+MAVS,1,0.3340992433255624,Logistic Regression
+DCBLD1,1,0.3193673472244572,Logistic Regression
+TXLNGY,1,0.1797460703664599,Logistic Regression
+DTL,1,0.0710368153444544,Logistic Regression
+Length of Hospitalization,5,1.4217439321046474,"LightGBM, XGBoost, Random Forest, Logistic Regression, Gradient Boosting"
+RPL29,5,1.123064511791045,"LightGBM, XGBoost, Random Forest, Logistic Regression, Gradient Boosting"
+RPL31,5,0.700254253455,"LightGBM, XGBoost, Random Forest, Logistic Regression, Gradient Boosting"
+ZFYVE1,4,0.551553381386199,"LightGBM, XGBoost, Random Forest, Gradient Boosting"
+PGRMC2,4,0.2524056450047444,"LightGBM, XGBoost, Random Forest, Gradient Boosting"
+GRB10,3,0.16041655661604248,"LightGBM, XGBoost, Random Forest"
+MAP2K3,3,0.1867899859824568,"LightGBM, XGBoost, Logistic Regression"
+RCN2,2,0.1771445805308827,"LightGBM, XGBoost"
+RNF10,2,0.5761037817345367,"LightGBM, Gradient Boosting"
+LINC02289,1,0.0816854918572511,LightGBM
+MTMR3,1,0.3870298358593429,Gradient Boosting
