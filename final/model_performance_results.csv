@@ -1,0 +1,5 @@
+Model,Test AUC,Optimal Threshold,Accuracy,F1 Score,Precision,Recall
+Logistic Regression with PCA,0.7714,0.1772,0.7632,0.6087,0.5385,0.7
+Random Forest,0.65,0.23,0.7105,0.56,0.4667,0.7
+LightGBM,0.6375,0.1969,0.6842,0.5385,0.4375,0.7
+XGBoost,0.6286,0.0333,0.5789,0.5294,0.375,0.9
