@@ -1,0 +1,21 @@
+Feature,Appearances,Avg_SHAP,Models
+TGFBI,4,0.5489591751492232,"LightGBM, XGBoost, Gradient Boosting, Logistic Regression"
+U2AF1,4,0.5424070486566926,"LightGBM, XGBoost, Gradient Boosting, Logistic Regression"
+HLA-DQB1,4,0.45241417464482314,"LightGBM, XGBoost, Gradient Boosting, Logistic Regression"
+ANKRD20A11P,4,0.3898021665189436,"LightGBM, XGBoost, Gradient Boosting, Logistic Regression"
+SYMPK,3,0.4064475543682522,"LightGBM, XGBoost, Gradient Boosting"
+EGR3,3,0.3638536818891436,"LightGBM, XGBoost, Gradient Boosting"
+GEN1,3,0.1839086806407036,"LightGBM, XGBoost, Gradient Boosting"
+MOSPD1,2,0.23956644981813477,"LightGBM, Gradient Boosting"
+LIPN,2,0.2239884601197314,"LightGBM, XGBoost"
+HLA-DRB6,1,0.21745850983154538,Logistic Regression
+CHD1L,1,0.16584191492640343,XGBoost
+MASTL,1,0.15089654997597093,Gradient Boosting
+HLA-F-AS1,1,0.14144366331202454,Gradient Boosting
+FAM210B,1,0.13044586087537938,Logistic Regression
+COL9A3,1,0.12787505588530546,Logistic Regression
+E2F2,1,0.11394245402581125,Logistic Regression
+CMPK2,1,0.10871809763529816,Logistic Regression
+FAM104B,1,0.10307592093060985,XGBoost
+H2AC14,1,0.10166597436889413,Logistic Regression
+SMARCA5,1,0.08952613018308488,LightGBM
