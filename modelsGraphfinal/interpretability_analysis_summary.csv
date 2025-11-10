@@ -1,0 +1,11 @@
+Model,SHAP_Analysis,AUC
+Residual_LSTM,✅ Success,0.9021739130434783
+Bidirectional_LSTM,✅ Success,0.8742236024844721
+LSTM,✅ Success,0.860248447204969
+Bidirectional_GRU,✅ Success,0.8571428571428572
+Optimized_Weighted_Ensemble,✅ Success,0.8555900621118012
+GRU,✅ Success,0.8524844720496895
+Attention_LSTM,✅ Success,0.8354037267080745
+CNN_LSTM,✅ Success,0.813664596273292
+Deep_CNN,✅ Success,0.781055900621118
+Transformer,✅ Success,0.6288819875776397
