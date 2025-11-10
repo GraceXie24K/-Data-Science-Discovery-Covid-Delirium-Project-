@@ -125,7 +125,6 @@ if num_impute_cols and len(merged_df) > 0:
             median_val = merged_df[col].median()
             merged_df[col].fillna(median_val, inplace=True)
 
-print(merged_df)
 
 if "Diagnosis" in merged_df.columns:
     print("Removing 'Diagnosis' column as it's nearly identical to Delirium target")

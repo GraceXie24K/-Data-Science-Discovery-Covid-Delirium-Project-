@@ -72,9 +72,9 @@ def transform_colname(col):
     return col
 
 print("Loading data...")
-admission_df = load_table('admission_norm_gene_exp_df.csv')
-demographic_df = load_table('delirium cohort demographics.xlsx')
-gene_symbols = load_table('gene_symbols.csv')
+admission_df = load_table('/users/audreysu/AudreyCovidProject/admission_norm_gene_exp_df.csv')
+demographic_df = load_table('/users/audreysu/AudreyCovidProject/delirium cohort demographics.xlsx')
+gene_symbols = load_table('/users/audreysu/AudreyCovidProject/gene_symbols.csv')
 
 # Data preprocessing
 admission_df = admission_df.rename(columns={admission_df.columns[0]: 'SampleID'})
@@ -476,6 +476,7 @@ for name, data in roc_curves_data.items():
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(f'graph/{name.replace(" ", "_").replace("-", "_")}_roc_curve.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'Figure 5/{name.replace(" ", "_").replace("-", "_")}_roc_curve.png', format = "tiff", dpi=300, bbox_inches='tight')
 
 print(f"\nEnhanced model training complete!")
 print(f"Results saved to: graph/model_performance_results.csv")
@@ -593,6 +594,7 @@ for rank, (_, model_row) in enumerate(shap_models.iterrows(), 1):
         plt.title(f'SHAP Feature Importance - {model_name} (Rank {rank}, AUC: {model_auc:.4f})', fontsize=16, fontweight='bold')
         plt.tight_layout()
         plt.savefig(f'graph/{model_name.replace(" ", "_")}_shap_importance.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'Figure 5/{model_name.replace(" ", "_")}_shap_importance.png', format = "tiff", dpi=300)
         plt.show()
         
         # 3. Force Plot for a sample prediction

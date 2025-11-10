@@ -62,6 +62,7 @@ def transform_colname(col):
 
 print("Loading data...")
 admission_df = load_table('/users/audreysu/AudreyCovidProject/admission_norm_gene_exp_df.csv')
+print(admission_df.shape)
 demographic_df = load_table('/users/audreysu/AudreyCovidProject/delirium cohort demographics.xlsx')
 print((demographic_df.shape))
 gene_symbols = load_table('/users/audreysu/AudreyCovidProject/gene_symbols.csv')
@@ -127,6 +128,9 @@ if num_impute_cols and len(merged_df) > 0:
 # Data preparation
 X = merged_df.drop(columns=[target, 'Master Record ID'])
 y = merged_df[target]
+
+print(merged_df.shape)
+print(merged_df["Delirium"])
 
 # One-hot encode categorical features
 X_cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()

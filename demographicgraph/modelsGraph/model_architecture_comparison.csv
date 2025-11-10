@@ -1,0 +1,10 @@
+Model,Architecture,AUC
+Residual_LSTM,LSTM with residual connections,0.9021739130434783
+Bidirectional_LSTM,Bidirectional LSTM with dense layer,0.8742236024844721
+LSTM,Basic LSTM with 2 layers,0.860248447204969
+Bidirectional_GRU,Bidirectional GRU with dense layer,0.8571428571428572
+GRU,Basic GRU with 2 layers,0.8524844720496895
+Attention_LSTM,LSTM with attention mechanism,0.8354037267080745
+CNN_LSTM,1D CNN + LSTM hybrid,0.813664596273292
+Deep_CNN,Deep 1D CNN with batch normalization,0.781055900621118
+Transformer,Multi-head attention transformer,0.6288819875776397

@@ -6,8 +6,8 @@ This analysis evaluated 9 different deep learning architectures for predicting d
 
 ## Model Performance Summary
 - **Total Models Evaluated**: 9
-- **Best Individual Model**: Bidirectional_LSTM (AUC: 0.8820)
-- **Ensemble Performance**: AUC: 0.8571
+- **Best Individual Model**: Bidirectional_GRU (AUC: 0.8758)
+- **Ensemble Performance**: AUC: 0.8400
 - **Total Features Analyzed**: 13107
 
 ## Model Architecture Analysis
@@ -30,7 +30,7 @@ The following architectures were evaluated:
 - **Feature Interaction Analysis**: Conducted for models with successful SHAP analysis
 
 ## Key Findings
-1. **Best Performing Architecture**: Bidirectional_LSTM
+1. **Best Performing Architecture**: Bidirectional_GRU
 2. **Feature Analysis**: 10 unique features identified as important across models
 3. **Ensemble Performance**: Did not improve over best individual model
 
@@ -44,10 +44,10 @@ The following architectures were evaluated:
 - Comprehensive comparison visualizations
 
 ## Recommendations
-1. **Model Selection**: Bidirectional_LSTM shows the best individual performance
+1. **Model Selection**: Bidirectional_GRU shows the best individual performance
 2. **Feature Engineering**: Focus on the most frequently important features across models
 3. **Interpretability**: Use SHAP values for understanding model decisions
 4. **Future Work**: Consider ensemble methods and hyperparameter optimization
 
 ---
-Generated on: 2025-10-20 14:09:50
+Generated on: 2025-11-09 18:45:08

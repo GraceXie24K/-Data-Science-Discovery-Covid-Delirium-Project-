@@ -843,6 +843,57 @@ for name, data in roc_curves_data.items():
 
     plt.show()
 
+# ------------------------------------------------------------------
+# Export ROC points (FPR/TPR) and top-20 SHAP features for each model
+# ------------------------------------------------------------------
+try:
+    # Ensure output folder exists
+    os.makedirs('serialGraph', exist_ok=True)
+
+    # Export ROC points
+    for model_name, data in roc_curves_data.items():
+        try:
+            fpr = np.asarray(data.get('fpr', []))
+            tpr = np.asarray(data.get('tpr', []))
+            df_roc = pd.DataFrame({'FPR': fpr, 'TPR': tpr})
+            safe_name = str(model_name).replace(' ', '_').replace('/', '_')
+            roc_filename = f'serialGraph/{safe_name}_roc_points.csv'
+            df_roc.to_csv(roc_filename, index=False)
+            print(f"✅ Saved ROC points for {model_name} -> {roc_filename}")
+        except Exception as e:
+            print(f"❌ Failed to save ROC points for {model_name}: {e}")
+
+    # Export top-20 SHAP features for models that have SHAP values saved
+    for model_name in results.keys():
+        try:
+            safe_name = str(model_name).replace(' ', '_').replace('/', '_')
+            shap_csv = f'serialGraph/{safe_name}_shap_values.csv'
+            if os.path.exists(shap_csv):
+                shap_df = pd.read_csv(shap_csv)
+                # Prefer a Mean_ABS_SHAP column; otherwise compute mean abs across numeric cols
+                if 'Mean_ABS_SHAP' not in shap_df.columns:
+                    numeric_cols = shap_df.select_dtypes(include=[np.number]).columns.tolist()
+                    if numeric_cols:
+                        shap_df['Mean_ABS_SHAP'] = shap_df[numeric_cols].abs().mean(axis=1)
+                    else:
+                        print(f"⚠️ No numeric SHAP columns for {model_name}, skipping top-20 export")
+                        continue
+
+                top20 = shap_df.sort_values('Mean_ABS_SHAP', ascending=False).head(20)
+                top20_fname = f'serialGraph/{safe_name}_top20_shap_features.csv'
+                top20.to_csv(top20_fname, index=False)
+                print(f"✅ Saved top-20 SHAP features for {model_name} -> {top20_fname}")
+            else:
+                # If shap file not present, skip
+                # (some models may not have SHAP if excluded earlier)
+                # print a debug message quietly
+                # print(f"⚠️ SHAP CSV not found for {model_name} -> {shap_csv}")
+                continue
+        except Exception as e:
+            print(f"❌ Failed to export top-20 SHAP for {model_name}: {e}")
+except Exception as e:
+    print(f"Error exporting ROC/SHAP CSVs: {e}")
+
 # Comprehensive visualization of all models' test AUCs
 print("\n--- Generating Comprehensive Visualizations ---")
 
